@@ -1,0 +1,31 @@
+{
+	"name": "AzurePostgreSql_Adm",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzurePostgreSql1",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "Adm"
+		},
+		"annotations": [],
+		"type": "AzurePostgreSqlTable",
+		"schema": [
+			{
+				"name": "filename",
+				"precision": 100,
+				"scale": 0
+			},
+			{
+				"name": "extractiontime",
+				"precision": 26,
+				"scale": 6
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "LandingEXT"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

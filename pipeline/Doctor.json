@@ -1,0 +1,129 @@
+{
+	"name": "Doctor",
+	"properties": {
+		"activities": [
+			{
+				"name": "Query files need to extract ods",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzurePostgreSqlSource",
+						"query": {
+							"value": "select d.*,e.filename from (select batch_time,source_name,max(lastModified_time) lastModified_time from (select a.*, b.maxtime\n               from dbo.\"ADM_FILE_EXTRACTRECORD\" a\n                        left join\n                    (select batch_time, source_name, max(lastModified_time) maxtime\n                     from dbo.\"ADM_FILE_EXTRACTRECORD\"\n                     where raw_data_state >= 1\n                     group by source_name, batch_time) b\n                    on a.source_name = b.source_name and a.batch_time = b.batch_time\n               where ((lastModified_time >= maxtime or maxtime is null) and a.source_name = '@{pipeline().parameters.source_name}')\n                 and raw_data_state = 1 and (ods_state=0 or ods_state=3))c group by c.batch_time,c.source_name) as d\nleft join dbo.\"ADM_FILE_EXTRACTRECORD\" e on d.source_name=e.source_name and d.batch_time=e.batch_time and d.lastModified_time=e.lastModified_time",
+							"type": "Expression"
+						},
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzurePostgreSql_Adm",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Query files need to extract ods",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Query files need to extract ods').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Staging",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/Staging/Staging_Doctor",
+								"baseParameters": {
+									"batch_time": {
+										"value": "@item().batch_time",
+										"type": "Expression"
+									},
+									"source_name": "digitalhub_doctor"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureDatabricks1",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Update State",
+							"type": "Lookup",
+							"dependsOn": [
+								{
+									"activity": "Staging",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzurePostgreSqlSource",
+									"query": {
+										"value": "update dbo.\"ADM_FILE_EXTRACTRECORD\" set\n        error='@{activity('Staging').output.runOutput.error}',ods_state=@{activity('Staging').output.runOutput.ods_state},ods_time=@{activity('Staging').output.runOutput.ods_time} where filename='@{item().filename}' and lastModified_time='@{item().lastModified_time}';\n\nselect 1;",
+										"type": "Expression"
+									},
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "AzurePostgreSql_Adm",
+									"type": "DatasetReference"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"source_name": {
+				"type": "string",
+				"defaultValue": "digitalhub_doctor"
+			}
+		},
+		"folder": {
+			"name": "02_Staging/DigitalHub"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-03-21T11:15:26Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

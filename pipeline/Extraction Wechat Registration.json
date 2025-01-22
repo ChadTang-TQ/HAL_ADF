@@ -1,0 +1,36 @@
+{
+	"name": "Extraction Wechat Registration",
+	"properties": {
+		"activities": [
+			{
+				"name": "Extraction Doctor",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "MoveSourceFilesToLanding",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"SourceStore_Location": "digitalhub",
+						"SourceStore_Directory": "WechatRegistration",
+						"DestinationStore_Location": "data/Landing_Layer/Source",
+						"DestinationStore_Directory": "DigitalHub/WechatRegistration",
+						"SourceName": "digitalhub_WechatRegistration"
+					}
+				}
+			}
+		],
+		"folder": {
+			"name": "01_Landing/DigitalHub"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-03-21T03:51:07Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

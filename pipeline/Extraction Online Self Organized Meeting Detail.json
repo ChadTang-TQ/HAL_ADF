@@ -1,0 +1,36 @@
+{
+	"name": "Extraction Online Self Organized Meeting Detail",
+	"properties": {
+		"activities": [
+			{
+				"name": "Extraction Doctor",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "MoveSourceFilesToLanding",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"SourceStore_Location": "digitalhub",
+						"SourceStore_Directory": "OnlineSelfOrganizedMeetingDetail",
+						"DestinationStore_Location": "data/Landing_Layer/Source",
+						"DestinationStore_Directory": "DigitalHub/OnlineSelfOrganizedMeetingDetail",
+						"SourceName": "digitalhub_OnlineSelfOrganizedMeetingDetail"
+					}
+				}
+			}
+		],
+		"folder": {
+			"name": "01_Landing/DigitalHub"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-03-20T14:29:40Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

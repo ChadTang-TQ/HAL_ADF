@@ -1,0 +1,9 @@
+{
+	"name": "adf-yf-demo",
+	"location": "chinaeast2",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "ec9cd35e-c423-4b8f-87ea-f61488d52e99",
+		"tenantId": "990750a6-9a15-4d77-88b7-fbb034d63835"
+	}
+}

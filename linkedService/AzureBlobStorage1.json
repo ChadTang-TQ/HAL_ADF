@@ -1,0 +1,12 @@
+{
+	"name": "AzureBlobStorage1",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobStorage",
+		"typeProperties": {
+			"connectionString": "DefaultEndpointsProtocol=https;AccountName=gskdemob1cd;EndpointSuffix=core.chinacloudapi.cn;",
+			"encryptedCredential": "ew0KICAiVmVyc2lvbiI6ICIyMDE3LTExLTMwIiwNCiAgIlByb3RlY3Rpb25Nb2RlIjogIktleSIsDQogICJTZWNyZXRDb250ZW50VHlwZSI6ICJQbGFpbnRleHQiLA0KICAiQ3JlZGVudGlhbElkIjogIkRBVEFGQUNUT1JZQEYyNjREQTA1LTc5OEItNDA4Ny1BQ0UwLUUxRTFCMzJGMDYwMF9kNWQ3NjdhYS01NjNkLTRkYTgtYmNlMS01MmY0OTNhMWEyNTAiDQp9"
+		}
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"name": "AzureBlobStorage_source",
+	"properties": {
+		"privateLinkResourceId": "/subscriptions/ee2737e1-f6a7-49ca-96c3-96ab5d7756bc/resourceGroups/gsk_demo/providers/Microsoft.Storage/storageAccounts/gskdemob1cd",
+		"groupId": "blob",
+		"fqdns": [
+			"gskdemob1cd.blob.core.chinacloudapi.cn"
+		]
+	}
+}

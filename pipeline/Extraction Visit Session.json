@@ -1,0 +1,36 @@
+{
+	"name": "Extraction Visit Session",
+	"properties": {
+		"activities": [
+			{
+				"name": "Extraction Doctor",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "MoveSourceFilesToLanding",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"SourceStore_Location": "digitalhub",
+						"SourceStore_Directory": "VisitSession",
+						"DestinationStore_Location": "data/Landing_Layer/Source",
+						"DestinationStore_Directory": "DigitalHub/VisitSession",
+						"SourceName": "digitalhub_VisitSession"
+					}
+				}
+			}
+		],
+		"folder": {
+			"name": "01_Landing/DigitalHub"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-03-20T14:33:24Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

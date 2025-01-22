@@ -1,0 +1,346 @@
+{
+	"name": "MoveSourceFilesToLanding",
+	"properties": {
+		"description": "Move files from one folder to another folder",
+		"activities": [
+			{
+				"name": "GetFileList",
+				"description": "Get the list of file",
+				"type": "GetMetadata",
+				"dependsOn": [
+					{
+						"activity": "GetConfig",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "Source_BinaryDataStore_DigitalHub",
+						"type": "DatasetReference",
+						"parameters": {
+							"Container": {
+								"value": "@pipeline().parameters.SourceStore_Location",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@pipeline().parameters.SourceStore_Directory",
+								"type": "Expression"
+							},
+							"File": "*"
+						}
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "BinaryReadSettings"
+					}
+				}
+			},
+			{
+				"name": "FilterFolders",
+				"description": "Only folder will be selected, the source-folders will not be selected.",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "GetFileList",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('GetFileList').output.childItems",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().type, 'Folder')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEach Folder",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "FilterFolders",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('FilterFolders').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"batchCount": 10,
+					"activities": [
+						{
+							"name": "move modified files",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "MoveAndLogModifiedFiles",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"source_location": {
+										"value": "@pipeline().parameters.SourceStore_Location",
+										"type": "Expression"
+									},
+									"source_dir": {
+										"value": "@concat(pipeline().parameters.SourceStore_Directory,\nif(greaterOrEquals(length(pipeline().parameters.SourceStore_Directory), 1), concat('/',item().name),item().name))",
+										"type": "Expression"
+									},
+									"suffix": {
+										"value": "@activity('GetConfig').output.pipelineReturnValue['suffix']",
+										"type": "Expression"
+									},
+									"prefix": {
+										"value": "@activity('GetConfig').output.pipelineReturnValue['prefix']",
+										"type": "Expression"
+									},
+									"frequency": {
+										"value": "@activity('GetConfig').output.pipelineReturnValue['frequency']",
+										"type": "Expression"
+									},
+									"destination_location": {
+										"value": "@pipeline().parameters.DestinationStore_Location",
+										"type": "Expression"
+									},
+									"destination_dir": {
+										"value": "@pipeline().parameters.DestinationStore_Directory",
+										"type": "Expression"
+									},
+									"topic": {
+										"value": "@activity('GetConfig').output.pipelineReturnValue['topic']",
+										"type": "Expression"
+									},
+									"lastModified_time": {
+										"value": "@activity('GetConfig').output.pipelineReturnValue['lastModified_time']",
+										"type": "Expression"
+									},
+									"source_name": {
+										"value": "@pipeline().parameters.SourceName",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "GetConfig",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "GetConfig",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"SourceName": {
+							"value": "@pipeline().parameters.SourceName",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "get_files_to_extract",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "ForEach Folder",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzurePostgreSqlSource",
+						"query": {
+							"value": "select d.*,e.filename from (select batch_time,source_name,max(lastModified_time) lastModified_time from (select a.*, b.maxtime\n               from dbo.\"ADM_FILE_EXTRACTRECORD\" a\n                        left join\n                    (select batch_time, source_name, max(lastModified_time) maxtime\n                     from dbo.\"ADM_FILE_EXTRACTRECORD\"\n                     where raw_data_state >= 1\n                     group by source_name, batch_time) b\n                    on a.source_name = b.source_name and a.batch_time = b.batch_time\n               where ((lastModified_time > maxtime or maxtime is null) and a.source_name = '@{pipeline().parameters.SourceName}')\n                 and raw_data_state = 0)c group by c.batch_time,c.source_name) as d\nleft join dbo.\"ADM_FILE_EXTRACTRECORD\" e on d.source_name=e.source_name and d.batch_time=e.batch_time and d.lastModified_time=e.lastModified_time",
+							"type": "Expression"
+						},
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzurePostgreSql_Adm",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "get_files_to_extract",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('get_files_to_extract').output.value",
+						"type": "Expression"
+					},
+					"batchCount": 1,
+					"activities": [
+						{
+							"name": "Extraction2Parquet",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/Landing/Doctor",
+								"baseParameters": {
+									"file_path": {
+										"value": "@concat(concat(pipeline().parameters.DestinationStore_Directory,'/'),substring(item().filename,length(activity('GetConfig').output.pipelineReturnValue['prefix']),6))",
+										"type": "Expression"
+									},
+									"file_name": {
+										"value": "@item().filename",
+										"type": "Expression"
+									},
+									"source_name": {
+										"value": "@item().source_name",
+										"type": "Expression"
+									},
+									"batch_time": {
+										"value": "@item().batch_time",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureDatabricks1",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Update State",
+							"type": "Lookup",
+							"dependsOn": [
+								{
+									"activity": "Extraction2Parquet",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzurePostgreSqlSource",
+									"query": {
+										"value": "update dbo.\"ADM_FILE_EXTRACTRECORD\" set\n        error='@{activity('Extraction2Parquet').output.runOutput.error}',raw_data_state=@{activity('Extraction2Parquet').output.runOutput.raw_data_state},raw_data_time=@{activity('Extraction2Parquet').output.runOutput.raw_data_time},check_state=@{activity('Extraction2Parquet').output.runOutput.dataCheck_state} where filename='@{item().filename}' and lastModified_time='@{item().lastModified_time}';\n\nselect 1;",
+										"type": "Expression"
+									},
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "AzurePostgreSql_Adm",
+									"type": "DatasetReference"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"SourceStore_Location": {
+				"type": "String",
+				"defaultValue": "digitalhub"
+			},
+			"SourceStore_Directory": {
+				"type": "String",
+				"defaultValue": "Doctor"
+			},
+			"DestinationStore_Location": {
+				"type": "String",
+				"defaultValue": "data/Landing_Layer/Source"
+			},
+			"DestinationStore_Directory": {
+				"type": "String",
+				"defaultValue": "DigitalHub/Doctor"
+			},
+			"SourceName": {
+				"type": "string",
+				"defaultValue": "digitalhub_doctor"
+			}
+		},
+		"variables": {
+			"suffix": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "00_Framework"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-03-20T14:37:38Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

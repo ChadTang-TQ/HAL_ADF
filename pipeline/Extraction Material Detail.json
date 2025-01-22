@@ -1,0 +1,36 @@
+{
+	"name": "Extraction Material Detail",
+	"properties": {
+		"activities": [
+			{
+				"name": "Extraction Doctor",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "MoveSourceFilesToLanding",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"SourceStore_Location": "digitalhub",
+						"SourceStore_Directory": "MaterialDetail",
+						"DestinationStore_Location": "data/Landing_Layer/Source",
+						"DestinationStore_Directory": "DigitalHub/MaterialDetail",
+						"SourceName": "digitalhub_MaterialDetail"
+					}
+				}
+			}
+		],
+		"folder": {
+			"name": "01_Landing/DigitalHub"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-03-20T10:19:20Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

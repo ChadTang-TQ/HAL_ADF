@@ -1,0 +1,103 @@
+{
+	"name": "GetConfig",
+	"properties": {
+		"activities": [
+			{
+				"name": "GetConfig",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzurePostgreSqlSource",
+						"query": {
+							"value": "select * from dbo.\"ADM_DATASOURCE_CONFIGURATION\" where \"source_name\" ='@{pipeline().parameters.SourceName}';",
+							"type": "Expression"
+						},
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzurePostgreSql_Adm",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "Set variable1",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "GetConfig",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "pipelineReturnValue",
+					"value": [
+						{
+							"key": "suffix",
+							"value": {
+								"type": "Expression",
+								"content": "@activity('GetConfig').output.firstRow['suffix']"
+							}
+						},
+						{
+							"key": "prefix",
+							"value": {
+								"type": "Expression",
+								"content": "@activity('GetConfig').output.firstRow['prefix']"
+							}
+						},
+						{
+							"key": "frequency",
+							"value": {
+								"type": "Expression",
+								"content": "@activity('GetConfig').output.firstRow['frequency']"
+							}
+						},
+						{
+							"key": "lastModified_time",
+							"value": {
+								"type": "Expression",
+								"content": "@activity('GetConfig').output.firstRow['lastModified_time']"
+							}
+						},
+						{
+							"key": "topic",
+							"value": {
+								"type": "Expression",
+								"content": "@activity('GetConfig').output.firstRow['topic']"
+							}
+						}
+					],
+					"setSystemVariable": true
+				}
+			}
+		],
+		"parameters": {
+			"SourceName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "00_Framework"
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-03-18T09:22:41Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
