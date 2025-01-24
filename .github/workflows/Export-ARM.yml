@@ -29,6 +29,13 @@ jobs:
         working-directory: ./  # 指定命令运行的工作目录
                                # 如果项目在子目录中，需要修改为对应的路径
 
+      - name: Print Variables打印配置的变量
+        run: |
+          echo "Workspace: ${{ github.workspace }}"
+          echo "Subscription ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          echo "Resource Group: ${{ secrets.AZURE_RESOURCE_GROUP }}"
+          echo "ADF Name: ${{ secrets.ADF_NAME }}"
+
       - name: Export ARM Template  # 导出 ARM 模板
         run: |  # 使用多行命令
           npm run build ${{github.workspace}}/ /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ secrets.AZURE_RESOURCE_GROUP }}/providers/Microsoft.DataFactory/factories/${{ secrets.ADF_NAME }} "ExportedArmTemplate"  # 指定导出的 ARM 模板文件夹名称
